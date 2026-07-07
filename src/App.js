@@ -7,6 +7,11 @@ const CATEGORY_COLORS = {
 };
 const CUSTOM_CAT_COLORS = ["#e88c7d","#7eb8a4","#f0c674","#9b8fd4","#6db8d4","#d4a96d","#c47eb8","#a8d4b0","#d4a8a8","#a8b8d4"];
 const QUICK_PICK_OPTIONS = [4, 6, 8, 10];
+const RANGE_OPTIONS = [
+  { id: "week", label: "Week" },
+  { id: "month", label: "Month" },
+  { id: "all", label: "All" },
+];
 
 const ACHIEVEMENTS = [
   { id: "first_log", label: "First Step", desc: "Log your first activity", icon: "✦", check: (l) => l.length >= 1 },
@@ -118,7 +123,6 @@ const css = `
 
   .form-label { font-size: 12px; color: var(--text2); font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
 
-  /* Quick pick count selector */
   .qp-count-row { display: flex; gap: 6px; margin-bottom: 10px; }
   .qp-count-btn { padding: 4px 10px; border-radius: 20px; background: var(--surface2); border: 1.5px solid transparent; color: var(--text3); font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: inherit; }
   .qp-count-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(126,184,164,0.1); }
@@ -128,7 +132,6 @@ const css = `
   .preset-btn:hover { border-color: var(--accent); color: var(--text); }
   .preset-btn.selected { border-color: var(--accent); background: rgba(126,184,164,0.12); color: var(--text); }
 
-  /* Activity name with clear button */
   .name-input-wrap { position: relative; margin-bottom: 16px; }
   .name-input { width: 100%; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 12px 40px 12px 14px; color: var(--text); font-size: 14px; font-family: inherit; outline: none; transition: border-color 0.15s; }
   .name-input:focus { border-color: var(--accent); }
@@ -136,14 +139,27 @@ const css = `
   .name-clear { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: var(--surface3); border: none; color: var(--text3); width: 22px; height: 22px; border-radius: 50%; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; line-height: 1; }
   .name-clear:hover { background: var(--coral); color: #fff; }
 
+  /* Category chip with delete (×) for custom categories only */
   .cat-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  .cat-chip-wrap { position: relative; display: inline-flex; }
   .cat-btn { padding: 7px 13px; border-radius: 20px; background: var(--surface2); border: 1.5px solid transparent; color: var(--text2); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
   .cat-btn.selected { color: #fff; }
+  .cat-btn.deletable { padding-right: 26px; }
+  .cat-del { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.15); border: none; color: inherit; width: 16px; height: 16px; border-radius: 50%; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; padding: 0; }
+  .cat-del:hover { background: var(--coral); color: #fff; }
   .add-cat-btn { padding: 7px 13px; border-radius: 20px; background: transparent; border: 1.5px dashed var(--text3); color: var(--text3); font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; margin-bottom: 16px; }
   .add-cat-btn:hover { border-color: var(--accent); color: var(--accent); }
   .new-cat-row { display: flex; gap: 8px; margin-bottom: 16px; }
   .new-cat-input { flex: 1; background: var(--surface2); border: 1.5px solid var(--accent); border-radius: var(--radius-sm); padding: 10px 14px; color: var(--text); font-size: 13px; font-family: inherit; outline: none; }
   .new-cat-save { padding: 10px 16px; background: var(--accent); border: none; border-radius: var(--radius-sm); color: var(--bg); font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+  /* Delete category confirm banner */
+  .confirm-banner { background: rgba(232,140,125,0.1); border: 1.5px solid var(--coral); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 16px; }
+  .confirm-text { font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 10px; }
+  .confirm-actions { display: flex; gap: 8px; }
+  .confirm-btn { flex: 1; padding: 9px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; border: none; }
+  .confirm-btn.danger { background: var(--coral); color: #1a1a2e; }
+  .confirm-btn.cancel { background: var(--surface2); color: var(--text2); }
 
   .field-row { margin-bottom: 18px; }
   .field-row-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -154,7 +170,6 @@ const css = `
   .slider-end { font-size: 11px; color: var(--text3); width: 60px; }
   .slider-end.right { text-align: right; }
 
-  /* Value input — typed, clears on focus */
   .value-input-row { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
   .value-prefix { font-size: 18px; font-weight: 700; color: var(--gold); }
   .value-input { flex: 1; background: var(--surface2); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; color: var(--gold); font-size: 22px; font-weight: 700; font-family: inherit; outline: none; transition: border-color 0.15s; }
@@ -179,11 +194,10 @@ const css = `
   .weekly-big { font-size: 42px; font-weight: 700; color: var(--gold); }
   .weekly-sub { font-size: 13px; color: var(--text2); margin-top: 4px; }
 
-  /* Bar chart container — fixed pixel height so bars are always visible */
-  .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 80px; padding-bottom: 20px; position: relative; }
-  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0; height: 100%; justify-content: flex-end; }
-  .bar-fill { width: 100%; border-radius: 4px 4px 0 0; min-height: 3px; transition: height 0.5s ease; }
-  .bar-label { font-size: 9px; color: var(--text3); text-transform: uppercase; margin-top: 4px; }
+  /* Range toggle for Insights */
+  .range-toggle { display: flex; background: var(--surface2); border-radius: 20px; padding: 3px; margin: 0 16px 16px; }
+  .range-btn { flex: 1; padding: 8px; border-radius: 17px; background: transparent; border: none; color: var(--text2); font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+  .range-btn.active { background: var(--accent); color: var(--bg); }
 
   .evidence-header { padding: 52px 20px 0; display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
   .evidence-icon { font-size: 28px; }
@@ -218,18 +232,14 @@ const css = `
 `;
 
 // ── LogModal ──────────────────────────────────────────────────────────────────
-function LogModal({ onClose, onSave, onDelete, logs, customCats, onAddCat, editEntry, quickPickCount, onSetQuickPickCount }) {
+function LogModal({ onClose, onSave, onDelete, logs, customCats, onAddCat, onDeleteCat, editEntry, quickPickCount, onSetQuickPickCount }) {
   const isEdit = !!editEntry;
   const allCats = [...DEFAULT_CATEGORIES, ...customCats];
 
-  // Build quick picks from past history (unique, most recent first)
   const pastActivities = [];
   const seen = new Set();
   [...logs].reverse().forEach(l => {
-    if (!seen.has(l.name)) {
-      seen.add(l.name);
-      pastActivities.push({ name: l.name, category: l.category, defaultValue: l.value });
-    }
+    if (!seen.has(l.name)) { seen.add(l.name); pastActivities.push({ name: l.name, category: l.category, defaultValue: l.value }); }
   });
   const staticPicks = [
     { name: "Exercise", category: "Health", defaultValue: 30 },
@@ -255,13 +265,9 @@ function LogModal({ onClose, onSave, onDelete, logs, customCats, onAddCat, editE
   const [date, setDate] = useState(editEntry?.date || getTodayStr());
   const [showNewCat, setShowNewCat] = useState(false);
   const [newCatName, setNewCatName] = useState("");
+  const [confirmDeleteCat, setConfirmDeleteCat] = useState(null); // category name pending deletion
 
-  const selectPreset = (p) => {
-    setSelectedPreset(p.name);
-    setName(p.name);
-    setCategory(p.category);
-    setValueStr(String(p.defaultValue));
-  };
+  const selectPreset = (p) => { setSelectedPreset(p.name); setName(p.name); setCategory(p.category); setValueStr(String(p.defaultValue)); };
 
   const handleAddCat = () => {
     const trimmed = newCatName.trim();
@@ -269,24 +275,33 @@ function LogModal({ onClose, onSave, onDelete, logs, customCats, onAddCat, editE
     setShowNewCat(false); setNewCatName("");
   };
 
-  // FIX 1: clear field on focus so "020" doesn't happen
+  // FIX: category deletion for custom categories
+  const usageCount = (cat) => logs.filter(l => l.category === cat).length;
+
+  const requestDeleteCat = (cat, e) => {
+    e.stopPropagation();
+    setConfirmDeleteCat(cat);
+  };
+
+  const confirmDelete = () => {
+    if (category === confirmDeleteCat) setCategory("Health");
+    onDeleteCat(confirmDeleteCat);
+    setConfirmDeleteCat(null);
+  };
+
   const handleValueFocus = (e) => e.target.select();
   const handleValueChange = (e) => {
     const raw = e.target.value.replace(/[^0-9]/g, "");
     setValueStr(raw === "" ? "" : String(parseInt(raw)));
   };
-  const handleValueBlur = () => {
-    const n = parseInt(valueStr);
-    setValueStr(isNaN(n) || n < 0 ? "0" : String(n));
-  };
+  const handleValueBlur = () => { const n = parseInt(valueStr); setValueStr(isNaN(n) || n < 0 ? "0" : String(n)); };
 
   const numericValue = Math.max(0, parseInt(valueStr) || 0);
   const canSave = name.trim().length > 0;
 
   const handleSave = () => {
     onSave({
-      id: editEntry?.id || Date.now(),
-      name: name.trim(), category,
+      id: editEntry?.id || Date.now(), name: name.trim(), category,
       value: numericValue, happiness, energy, date,
       time: editEntry?.time || new Date().toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit" }),
     });
@@ -302,47 +317,64 @@ function LogModal({ onClose, onSave, onDelete, logs, customCats, onAddCat, editE
           <div className="modal-title">{isEdit ? "Edit Activity" : "Log an Activity"}</div>
         </div>
 
-        {/* Quick Pick with count selector */}
         <label className="form-label">
           <span>{pastActivities.length > 0 ? "Quick Pick (your recent)" : "Quick Pick"}</span>
           <span style={{ color: "var(--text3)", fontSize: 10, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>Show</span>
         </label>
         <div className="qp-count-row">
           {QUICK_PICK_OPTIONS.map(n => (
-            <button key={n} className={`qp-count-btn ${quickPickCount === n ? "active" : ""}`}
-              onClick={() => onSetQuickPickCount(n)}>{n}</button>
+            <button key={n} className={`qp-count-btn ${quickPickCount === n ? "active" : ""}`} onClick={() => onSetQuickPickCount(n)}>{n}</button>
           ))}
         </div>
         <div className="preset-grid">
           {quickPicks.map(p => (
-            <button key={p.name} className={`preset-btn ${selectedPreset === p.name ? "selected" : ""}`}
-              onClick={() => selectPreset(p)}>{p.name}</button>
+            <button key={p.name} className={`preset-btn ${selectedPreset === p.name ? "selected" : ""}`} onClick={() => selectPreset(p)}>{p.name}</button>
           ))}
         </div>
 
-        {/* FIX 3: Activity name with clear (×) and edit button */}
         <label className="form-label"><span>Activity Name</span></label>
         <div className="name-input-wrap">
           <input className="name-input" placeholder="Or type your own…" value={name}
             onChange={e => { setName(e.target.value); setSelectedPreset(null); }} />
-          {name.length > 0 && (
-            <button className="name-clear" onClick={() => { setName(""); setSelectedPreset(null); }}>×</button>
-          )}
+          {name.length > 0 && <button className="name-clear" onClick={() => { setName(""); setSelectedPreset(null); }}>×</button>}
         </div>
 
         <label className="form-label"><span>Category</span></label>
         <div className="cat-grid">
-          {allCats.map(c => (
-            <button key={c} className={`cat-btn ${category === c ? "selected" : ""}`}
-              style={category === c ? { background: getCatColor(c, customCats) + "33", borderColor: getCatColor(c, customCats) } : {}}
-              onClick={() => setCategory(c)}>{c}</button>
-          ))}
+          {allCats.map(c => {
+            const isCustom = customCats.includes(c);
+            return (
+              <div className="cat-chip-wrap" key={c}>
+                <button className={`cat-btn ${category === c ? "selected" : ""} ${isCustom ? "deletable" : ""}`}
+                  style={category === c ? { background: getCatColor(c, customCats) + "33", borderColor: getCatColor(c, customCats) } : {}}
+                  onClick={() => setCategory(c)}>{c}</button>
+                {isCustom && (
+                  <button className="cat-del" onClick={(e) => requestDeleteCat(c, e)} title="Delete category">×</button>
+                )}
+              </div>
+            );
+          })}
         </div>
+
+        {confirmDeleteCat && (
+          <div className="confirm-banner">
+            <div className="confirm-text">
+              Delete <strong>{confirmDeleteCat}</strong>?
+              {usageCount(confirmDeleteCat) > 0
+                ? ` ${usageCount(confirmDeleteCat)} existing ${usageCount(confirmDeleteCat) === 1 ? "entry" : "entries"} will be moved to "Health".`
+                : " No entries use this category."}
+            </div>
+            <div className="confirm-actions">
+              <button className="confirm-btn cancel" onClick={() => setConfirmDeleteCat(null)}>Cancel</button>
+              <button className="confirm-btn danger" onClick={confirmDelete}>Delete</button>
+            </div>
+          </div>
+        )}
+
         {showNewCat ? (
           <div className="new-cat-row">
             <input className="new-cat-input" placeholder="Category name…" value={newCatName}
-              onChange={e => setNewCatName(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleAddCat()} autoFocus />
+              onChange={e => setNewCatName(e.target.value)} onKeyDown={e => e.key === "Enter" && handleAddCat()} autoFocus />
             <button className="new-cat-save" onClick={handleAddCat}>Add</button>
           </div>
         ) : (
@@ -354,25 +386,17 @@ function LogModal({ onClose, onSave, onDelete, logs, customCats, onAddCat, editE
           <input className="date-input" type="date" value={date} max={getTodayStr()} onChange={e => setDate(e.target.value)} />
         </div>
 
-        {/* FIX 1: value input clears on focus */}
         <div className="field-row">
-          <div className="field-row-label">
-            <span>Contribution Value</span>
-            <span style={{ color: "var(--gold)" }}>RM {numericValue}</span>
-          </div>
+          <div className="field-row-label"><span>Contribution Value</span><span style={{ color: "var(--gold)" }}>RM {numericValue}</span></div>
           <div className="value-input-row" style={{ marginBottom: 0 }}>
             <span className="value-prefix">RM</span>
-            <input className="value-input" type="number" inputMode="numeric" min="0"
-              value={valueStr} onFocus={handleValueFocus}
-              onChange={handleValueChange} onBlur={handleValueBlur} />
+            <input className="value-input" type="number" inputMode="numeric" min="0" value={valueStr}
+              onFocus={handleValueFocus} onChange={handleValueChange} onBlur={handleValueBlur} />
           </div>
         </div>
 
         <div className="field-row">
-          <div className="field-row-label">
-            <span>Happiness</span>
-            <span style={{ color: "var(--purple)" }}>{happiness} / 5</span>
-          </div>
+          <div className="field-row-label"><span>Happiness</span><span style={{ color: "var(--purple)" }}>{happiness} / 5</span></div>
           <div className="slider-track">
             <span className="slider-end">😞 Low</span>
             <input type="range" min="1" max="5" value={happiness} onChange={e => setHappiness(+e.target.value)} />
@@ -381,10 +405,7 @@ function LogModal({ onClose, onSave, onDelete, logs, customCats, onAddCat, editE
         </div>
 
         <div className="field-row">
-          <div className="field-row-label">
-            <span>Energy Impact</span>
-            <span style={{ color: energy >= 0 ? "var(--green)" : "var(--coral)" }}>{energy > 0 ? "+" : ""}{energy}</span>
-          </div>
+          <div className="field-row-label"><span>Energy Impact</span><span style={{ color: energy >= 0 ? "var(--green)" : "var(--coral)" }}>{energy > 0 ? "+" : ""}{energy}</span></div>
           <div className="slider-track">
             <span className="slider-end">⚡ Drain</span>
             <input type="range" min="-5" max="5" value={energy} onChange={e => setEnergy(+e.target.value)} />
@@ -392,14 +413,8 @@ function LogModal({ onClose, onSave, onDelete, logs, customCats, onAddCat, editE
           </div>
         </div>
 
-        <button className="submit-btn" disabled={!canSave} onClick={handleSave}>
-          {isEdit ? "Save Changes" : "Save Contribution"}
-        </button>
-        {isEdit && (
-          <button className="delete-btn" onClick={() => { onDelete(editEntry.id); onClose(); }}>
-            Delete Entry
-          </button>
-        )}
+        <button className="submit-btn" disabled={!canSave} onClick={handleSave}>{isEdit ? "Save Changes" : "Save Contribution"}</button>
+        {isEdit && <button className="delete-btn" onClick={() => { onDelete(editEntry.id); onClose(); }}>Delete Entry</button>}
       </div>
     </div>
   );
@@ -454,10 +469,7 @@ function TodayScreen({ logs, customCats, onEditEntry }) {
         </div>
       )}
       <div className="section">
-        <div className="section-header">
-          <div className="section-title">Today's Log</div>
-          <div className="section-action">{todayLogs.length} activities</div>
-        </div>
+        <div className="section-header"><div className="section-title">Today's Log</div><div className="section-action">{todayLogs.length} activities</div></div>
         {todayLogs.length === 0 ? (
           <div className="empty"><div className="glow-ring">✦</div><div className="empty-text">Tap <strong style={{ color: "var(--accent)" }}>+</strong> below to log your first contribution today.</div></div>
         ) : todayLogs.map(l => (
@@ -476,65 +488,94 @@ function TodayScreen({ logs, customCats, onEditEntry }) {
   );
 }
 
+// FIX: Insights now supports Week / Month / All range toggle
 function InsightsScreen({ logs }) {
-  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
-  const weekLogs = logs.filter(l => new Date(l.date) >= weekAgo);
-  const weekValue = weekLogs.reduce((s, l) => s + l.value, 0);
+  const [range, setRange] = useState("week");
+
+  const now = new Date();
+  const rangeStart = new Date();
+  if (range === "week") rangeStart.setDate(now.getDate() - 7);
+  else if (range === "month") rangeStart.setDate(now.getDate() - 30);
+  else rangeStart.setFullYear(2000); // effectively "all"
+
+  const rangeLogs = logs.filter(l => new Date(l.date) >= rangeStart);
+  const rangeValue = rangeLogs.reduce((s, l) => s + l.value, 0);
 
   const catHappy = {}, catCount = {};
-  weekLogs.forEach(l => { catHappy[l.category] = (catHappy[l.category] || 0) + l.happiness; catCount[l.category] = (catCount[l.category] || 0) + 1; });
+  rangeLogs.forEach(l => { catHappy[l.category] = (catHappy[l.category] || 0) + l.happiness; catCount[l.category] = (catCount[l.category] || 0) + 1; });
   const topHappy = Object.entries(catHappy).map(([c, h]) => ({ cat: c, avg: h / catCount[c] })).sort((a, b) => b.avg - a.avg)[0];
 
   const energyByAct = {};
-  weekLogs.forEach(l => { if (!energyByAct[l.name]) energyByAct[l.name] = { energy: 0, count: 0 }; energyByAct[l.name].energy += l.energy; energyByAct[l.name].count++; });
+  rangeLogs.forEach(l => { if (!energyByAct[l.name]) energyByAct[l.name] = { energy: 0, count: 0 }; energyByAct[l.name].energy += l.energy; energyByAct[l.name].count++; });
   const topEnergy = Object.entries(energyByAct).sort((a, b) => (b[1].energy / b[1].count) - (a[1].energy / a[1].count))[0];
 
-  // FIX 2: bar chart — compute absolute pixel heights from a fixed 56px chart area
+  // Chart bucketing: week -> 7 days, month -> ~4-5 weekly buckets, all -> monthly buckets
   const CHART_H = 56;
-  const days = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const ds = d.toISOString().split("T")[0];
-    const val = logs.filter(l => l.date === ds).reduce((s, l) => s + l.value, 0);
-    days.push({ label: d.toLocaleDateString("en-MY", { weekday: "short" }), value: val });
+  let buckets = [];
+  if (range === "week") {
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const ds = d.toISOString().split("T")[0];
+      buckets.push({ label: d.toLocaleDateString("en-MY", { weekday: "short" }), value: logs.filter(l => l.date === ds).reduce((s, l) => s + l.value, 0) });
+    }
+  } else if (range === "month") {
+    for (let i = 3; i >= 0; i--) {
+      const end = new Date(); end.setDate(end.getDate() - i * 7);
+      const start = new Date(end); start.setDate(end.getDate() - 6);
+      const val = logs.filter(l => { const d = new Date(l.date); return d >= start && d <= end; }).reduce((s, l) => s + l.value, 0);
+      buckets.push({ label: `Wk ${4 - i}`, value: val });
+    }
+  } else {
+    const monthMap = {};
+    logs.forEach(l => {
+      const d = new Date(l.date);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      if (!monthMap[key]) monthMap[key] = { label: d.toLocaleDateString("en-MY", { month: "short" }), value: 0, sortKey: d.getFullYear() * 12 + d.getMonth() };
+      monthMap[key].value += l.value;
+    });
+    buckets = Object.values(monthMap).sort((a, b) => a.sortKey - b.sortKey).slice(-6);
+    if (buckets.length === 0) buckets = [{ label: "—", value: 0 }];
   }
-  const maxVal = Math.max(...days.map(d => d.value), 1);
-  // If all days have the same value (or only one day has data), still show visible bars
+  const maxVal = Math.max(...buckets.map(d => d.value), 1);
   const getBarH = (v) => v === 0 ? 3 : Math.max(8, Math.round((v / maxVal) * CHART_H));
+
+  const rangeSubLabel = range === "week" ? "this week" : range === "month" ? "this month" : "all time";
+  const chartTitle = range === "week" ? "Daily Value" : range === "month" ? "Weekly Value" : "Monthly Value";
 
   return (
     <div className="screen">
-      <div className="header"><div><div className="header-title">Weekly View</div><div className="header-name">Insights</div></div></div>
+      <div className="header"><div><div className="header-title">{RANGE_OPTIONS.find(r => r.id === range).label} View</div><div className="header-name">Insights</div></div></div>
+
+      <div className="range-toggle">
+        {RANGE_OPTIONS.map(r => (
+          <button key={r.id} className={`range-btn ${range === r.id ? "active" : ""}`} onClick={() => setRange(r.id)}>{r.label}</button>
+        ))}
+      </div>
+
       <div className="weekly-total">
-        <div className="weekly-big">RM{weekValue}</div>
-        <div className="weekly-sub">of contribution created this week</div>
+        <div className="weekly-big">RM{rangeValue}</div>
+        <div className="weekly-sub">of contribution created {rangeSubLabel}</div>
       </div>
       <div className="section">
-        <div className="section-header"><div className="section-title">Daily Value</div></div>
-        {/* FIX 2: pixel-height bars so they always render visibly */}
+        <div className="section-header"><div className="section-title">{chartTitle}</div></div>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: `${CHART_H + 20}px` }}>
-          {days.map(d => (
-            <div key={d.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end" }}>
-              <div style={{
-                width: "100%", borderRadius: "4px 4px 0 0",
-                height: `${getBarH(d.value)}px`,
-                background: d.value > 0 ? "var(--accent)" : "var(--surface2)",
-                transition: "height 0.5s ease",
-              }} />
+          {buckets.map((d, i) => (
+            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end" }}>
+              <div style={{ width: "100%", borderRadius: "4px 4px 0 0", height: `${getBarH(d.value)}px`, background: d.value > 0 ? "var(--accent)" : "var(--surface2)", transition: "height 0.5s ease" }} />
               <div style={{ fontSize: 9, color: "var(--text3)", textTransform: "uppercase", marginTop: 4 }}>{d.label}</div>
             </div>
           ))}
         </div>
       </div>
       <div className="section">
-        <div className="section-header"><div className="section-title">Patterns This Week</div></div>
-        {weekLogs.length === 0 ? (
-          <div className="empty"><div className="empty-icon">📊</div><div className="empty-text">Log activities this week to see your patterns here.</div></div>
+        <div className="section-header"><div className="section-title">Patterns {rangeSubLabel}</div></div>
+        {rangeLogs.length === 0 ? (
+          <div className="empty"><div className="empty-icon">📊</div><div className="empty-text">Log activities to see your patterns here.</div></div>
         ) : (
           <>
-            {topHappy && <div className="insight-card"><div className="insight-icon">😊</div><div className="insight-text"><strong>{topHappy.cat}</strong> activities brought you the highest happiness this week (avg {topHappy.avg.toFixed(1)}/5).</div></div>}
+            {topHappy && <div className="insight-card"><div className="insight-icon">😊</div><div className="insight-text"><strong>{topHappy.cat}</strong> activities brought you the highest happiness {rangeSubLabel} (avg {topHappy.avg.toFixed(1)}/5).</div></div>}
             {topEnergy && <div className="insight-card"><div className="insight-icon">⚡</div><div className="insight-text"><strong>{topEnergy[0]}</strong> was your most energising activity — avg {topEnergy[1].energy > 0 ? "+" : ""}{(topEnergy[1].energy / topEnergy[1].count).toFixed(1)} energy per session.</div></div>}
-            <div className="insight-card"><div className="insight-icon">📈</div><div className="insight-text">You logged <strong>{weekLogs.length} activities</strong> this week across {new Set(weekLogs.map(l => l.category)).size} different life categories.</div></div>
+            <div className="insight-card"><div className="insight-icon">📈</div><div className="insight-text">You logged <strong>{rangeLogs.length} activities</strong> {rangeSubLabel} across {new Set(rangeLogs.map(l => l.category)).size} different life categories.</div></div>
           </>
         )}
       </div>
@@ -624,6 +665,12 @@ export default function App() {
   const deleteEntry = useCallback((id) => { setLogs(prev => prev.filter(l => l.id !== id)); }, []);
   const addCat = useCallback((name) => { setCustomCats(prev => prev.includes(name) ? prev : [...prev, name]); }, []);
 
+  // FIX: delete a custom category — reassign any entries using it to "Health"
+  const deleteCat = useCallback((name) => {
+    setCustomCats(prev => prev.filter(c => c !== name));
+    setLogs(prev => prev.map(l => l.category === name ? { ...l, category: "Health" } : l));
+  }, []);
+
   const openEdit = (entry) => { setEditEntry(entry); setShowLog(true); };
   const openNew = () => { setEditEntry(null); setShowLog(true); };
   const closeModal = () => { setShowLog(false); setEditEntry(null); };
@@ -659,7 +706,7 @@ export default function App() {
         {showLog && (
           <LogModal
             onClose={closeModal} onSave={saveEntry} onDelete={deleteEntry}
-            logs={logs} customCats={customCats} onAddCat={addCat}
+            logs={logs} customCats={customCats} onAddCat={addCat} onDeleteCat={deleteCat}
             editEntry={editEntry}
             quickPickCount={quickPickCount} onSetQuickPickCount={setQuickPickCount}
           />
